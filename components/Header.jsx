@@ -173,14 +173,14 @@ export default function Header() {
                           onClick={handleSearchSubmit}
                           className="text-xs text-[#66FCF1] hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <span>See full search results for "{searchQuery}"</span>
+                          <span>See full search results for &quot;{searchQuery}&quot;</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="p-4 text-center text-xs text-[#8E9BAE]">
-                      No prompts found matching "{searchQuery}"
+                      No prompts found matching &quot;{searchQuery}&quot;
                     </div>
                   )}
                 </div>

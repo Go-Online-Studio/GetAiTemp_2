@@ -87,7 +87,7 @@ export default function PromptFormulaInspector() {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#45A29E]">
             <Layers className="w-3.5 h-3.5 text-[#66FCF1]" />
-            <span>Signature Director's HUD</span>
+            <span>Signature Director&apos;s HUD</span>
           </div>
           <h2 className="font-['Space_Grotesk'] text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
             Anatomy of a Studio-Grade AI Video Prompt
@@ -201,7 +201,7 @@ export default function PromptFormulaInspector() {
       <div className="p-6 rounded-2xl bg-[#45A29E]/10 border border-[#45A29E]/30 text-sm text-[#C9D1D9] flex items-start gap-3.5 leading-relaxed">
         <Sparkles className="w-5 h-5 text-[#66FCF1] shrink-0 mt-0.5" />
         <div>
-          <span className="font-bold text-[#66FCF1]">Director's Engineering Insight: </span>
+          <span className="font-bold text-[#66FCF1]">Director&apos;s Engineering Insight: </span>
           {current.directorNote}
         </div>
       </div>
