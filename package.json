@@ -1,0 +1,36 @@
+{
+  "name": "getyouraiprompt",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev -p 3000 -H 0.0.0.0",
+    "build": "next build",
+    "lint": "next lint",
+    "export": "node scripts/export-static-html.js",
+    "bundle": "node scripts/prepare-hostinger-bundle.js",
+    "start": "next start",
+    "seed": "node scripts/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.3.4",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
+    "jose": "^6.2.12",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.68.0",
+    "mongoose": "^9.11.2",
+    "motion": "^14.9.1",
+    "next": "^15.5.28",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^4.3.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.0.0",
+    "pdf-parse": "^2.4.5"
+  }
+}
