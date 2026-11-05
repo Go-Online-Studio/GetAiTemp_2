@@ -168,10 +168,10 @@ export default function AdSlot({ position = 'banner', className = '', style = {}
       <div
         ref={adRef}
         aria-label="Sponsored In-Feed Announcement"
-        className={`flex flex-col justify-between p-6 rounded-3xl bg-[#141d28]/70 border border-dashed border-[#45A29E]/40 min-h-[380px] text-center relative overflow-hidden backdrop-blur-md shadow-xl hover:border-[#66FCF1]/60 transition-all break-inside-avoid mb-7 w-full inline-block align-top ${className}`}
+        className={`native-grid-ad flex flex-col justify-between p-6 rounded-3xl bg-[#141d28]/70 border border-dashed border-[#45A29E]/40 min-h-[380px] text-center relative overflow-hidden backdrop-blur-md shadow-xl hover:border-[#66FCF1]/60 transition-all break-inside-avoid mb-7 w-full inline-block align-top ${className}`}
         style={style}
       >
-        <div className="flex items-center justify-between text-[11px] font-mono tracking-widest uppercase text-[#8B949E]">
+        <div className="native-ad-header flex items-center justify-between text-[11px] font-mono tracking-widest uppercase text-[#8B949E]">
           <span className="text-[#45A29E] font-semibold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#66FCF1] animate-pulse" />
             Sponsored Blueprint
@@ -179,7 +179,7 @@ export default function AdSlot({ position = 'banner', className = '', style = {}
           <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px]">Ad</span>
         </div>
 
-        <div className="my-auto py-6 flex flex-col items-center justify-center space-y-4">
+        <div className="native-ad-content my-auto py-6 flex flex-col items-center justify-center space-y-4">
           {isAuthorizedHost && client && isVisible ? (
             <ins
               className="adsbygoogle"
@@ -190,18 +190,18 @@ export default function AdSlot({ position = 'banner', className = '', style = {}
               data-full-width-responsive="true"
             />
           ) : (
-            <div className="space-y-3 max-w-[240px] mx-auto">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#45A29E]/20 to-[#141d28] border border-[#45A29E]/40 flex items-center justify-center mx-auto text-[#66FCF1] font-mono text-sm font-bold shadow-[0_0_16px_rgba(102,252,241,0.25)]">
+            <div className="native-ad-promo space-y-3 max-w-[240px] mx-auto">
+              <div className="native-ad-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-[#45A29E]/20 to-[#141d28] border border-[#45A29E]/40 flex items-center justify-center mx-auto text-[#66FCF1] font-mono text-sm font-bold shadow-[0_0_16px_rgba(102,252,241,0.25)]">
                 GPU
               </div>
-              <div className="text-base font-['Space_Grotesk'] text-white font-bold leading-snug">
+              <div className="native-ad-title text-base font-['Space_Grotesk'] text-white font-bold leading-snug">
                 Accelerate Generative Video Production
               </div>
-              <p className="text-xs text-[#8B949E] leading-relaxed">
+              <p className="native-ad-description text-xs text-[#8B949E] leading-relaxed">
                 Unlock enterprise GPU instances optimized for large-scale camera synthesis and commercial rendering.
               </p>
               <div className="pt-2">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#66FCF1] bg-[#45A29E]/15 px-3.5 py-1.5 rounded-xl border border-[#45A29E]/30 hover:bg-[#45A29E]/30 transition-all cursor-pointer">
+                <span className="native-ad-cta inline-flex items-center gap-1.5 text-xs font-semibold text-[#66FCF1] bg-[#45A29E]/15 px-3.5 py-1.5 rounded-xl border border-[#45A29E]/30 hover:bg-[#45A29E]/30 transition-all cursor-pointer">
                   Explore GPU Cloud →
                 </span>
               </div>
@@ -209,7 +209,7 @@ export default function AdSlot({ position = 'banner', className = '', style = {}
           )}
         </div>
 
-        <div className="text-[10px] text-[#8B949E] font-mono uppercase tracking-wider pt-3 border-t border-white/5">
+        <div className="native-ad-footer text-[10px] text-[#8B949E] font-mono uppercase tracking-wider pt-3 border-t border-white/5">
           Advertisement · Supports Free Video Blueprints
         </div>
       </div>

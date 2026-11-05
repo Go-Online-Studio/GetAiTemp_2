@@ -142,17 +142,17 @@ export default function Header() {
     : null;
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-nav px-4 sm:px-8 py-3.5 transition-all">
+    <header className="sticky top-0 z-50 h-[var(--main-nav-height)] w-full glass-nav px-4 sm:px-8 transition-all">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 md:gap-8">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#45A29E] to-[#1F2833] flex items-center justify-center border border-[#66FCF1]/30 group-hover:border-[#66FCF1] transition-colors shadow-[0_0_12px_rgba(102,252,241,0.2)]">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-[#45A29E] to-[#1F2833] flex items-center justify-center border border-[#66FCF1]/30 group-hover:border-[#66FCF1] transition-colors shadow-[0_0_12px_rgba(102,252,241,0.2)]">
             <Film className="w-4 h-4 text-[#66FCF1]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-['Space_Grotesk'] font-bold text-lg tracking-tight text-white flex items-center gap-1">
+            <span className="font-['Space_Grotesk'] font-bold text-base sm:text-lg leading-5 tracking-tight text-white flex items-center gap-1">
               GetYour<span className="text-[#66FCF1]">AI</span>Prompt
             </span>
-            <span className="text-[10px] uppercase tracking-widest text-[#8E9BAE] -mt-1 font-mono">
+            <span className="text-[8px] sm:text-[10px] leading-3 uppercase tracking-widest text-[#8E9BAE] font-mono">
               AI Video Prompts
             </span>
           </div>

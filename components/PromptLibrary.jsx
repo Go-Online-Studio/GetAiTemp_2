@@ -6,25 +6,34 @@ import AdSlot from './AdSlot';
 import { Search, RotateCcw, ArrowDown } from 'lucide-react';
 
 const BATCH_SIZE = 8;
-const COLUMN_GAP = 28;
+const DESKTOP_COLUMN_GAP = 28;
+const INITIAL_COLUMN_COUNT = 2;
+const MOBILE_COLUMN_GAP = 8;
 
 function getColumnCount(width) {
   if (width >= 1280) return 4;
   if (width >= 1024) return 3;
-  if (width >= 640) return 2;
-  return 1;
+  if (width >= 768) return 2;
+  return 2;
 }
 
-function getColumnWidth(galleryWidth, columnCount) {
-  return Math.max(1, (galleryWidth - COLUMN_GAP * (columnCount - 1)) / columnCount);
+function getColumnGap(width) {
+  return width < 768 ? MOBILE_COLUMN_GAP : DESKTOP_COLUMN_GAP;
 }
 
-function getEstimatedItemHeight(item, columnWidth) {
-  if (item.type === 'ad') return 440;
+function getColumnWidth(galleryWidth, columnCount, columnGap) {
+  return Math.max(1, (galleryWidth - columnGap * (columnCount - 1)) / columnCount);
+}
+
+function getEstimatedItemHeight(item, columnWidth, columnGap) {
+  if (item.type === 'ad') {
+    const adHeight = columnWidth < 300 ? Math.min(240, Math.max(180, columnWidth * 1.2)) : 440;
+    return adHeight + columnGap;
+  }
 
   const [ratioWidth, ratioHeight] = (item.video.aspectRatio || '16:9').split(':').map(Number);
   const mediaHeight = ratioWidth && ratioHeight ? columnWidth * ratioHeight / ratioWidth : columnWidth * 9 / 16;
-  return mediaHeight + 190;
+  return mediaHeight + columnGap;
 }
 
 function createGalleryEntries(videos, startIndex, totalCount) {
@@ -43,7 +52,7 @@ function createGalleryEntries(videos, startIndex, totalCount) {
   return entries.filter((entry) => entry.type !== 'ad' || Number(entry.key.split('-').at(-1)) < totalCount);
 }
 
-function distributeEntries(columns, entries, heights, columnWidth) {
+function distributeEntries(columns, entries, heights, columnWidth, columnGap) {
   entries.forEach((entry) => {
     let shortestColumn = 0;
 
@@ -52,16 +61,16 @@ function distributeEntries(columns, entries, heights, columnWidth) {
     }
 
     columns[shortestColumn].push(entry);
-    heights[shortestColumn] += getEstimatedItemHeight(entry, columnWidth);
+    heights[shortestColumn] += getEstimatedItemHeight(entry, columnWidth, columnGap);
   });
 }
 
-function createMasonryLayout(videos, visibleCount, totalCount, columnCount, columnWidth) {
+function createMasonryLayout(videos, visibleCount, totalCount, columnCount, columnWidth, columnGap) {
   const columns = Array.from({ length: columnCount }, () => []);
   const heights = Array(columnCount).fill(0);
   const entries = createGalleryEntries(videos.slice(0, visibleCount), 0, totalCount);
 
-  distributeEntries(columns, entries, heights, columnWidth);
+  distributeEntries(columns, entries, heights, columnWidth, columnGap);
   return { columns, heights };
 }
 
@@ -117,14 +126,16 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
   }, [initialVideos, aspectRatioFilter, styleFilter, search]);
 
   const initialVisibleCount = Math.min(BATCH_SIZE, filteredVideos.length);
-  const [columnCount, setColumnCount] = useState(1);
+  const [columnCount, setColumnCount] = useState(INITIAL_COLUMN_COUNT);
+  const [columnGap, setColumnGap] = useState(MOBILE_COLUMN_GAP);
   const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
   const [columns, setColumns] = useState(() => createMasonryLayout(
     filteredVideos,
     initialVisibleCount,
     filteredVideos.length,
-    1,
-    320
+    INITIAL_COLUMN_COUNT,
+    getColumnWidth(320, INITIAL_COLUMN_COUNT, MOBILE_COLUMN_GAP),
+    MOBILE_COLUMN_GAP
   ).columns);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef(null);
@@ -138,7 +149,10 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
   const loadMoreTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const updateColumns = () => setColumnCount(getColumnCount(window.innerWidth));
+    const updateColumns = () => {
+      setColumnCount(getColumnCount(window.innerWidth));
+      setColumnGap(getColumnGap(window.innerWidth));
+    };
     updateColumns();
     window.addEventListener('resize', updateColumns);
     return () => window.removeEventListener('resize', updateColumns);
@@ -160,20 +174,21 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
       loadMoreTimeoutRef.current = null;
     }
 
-    const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount);
+    const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount, columnGap);
     const nextLayout = createMasonryLayout(
       filteredVideos,
       nextVisibleCount,
       filteredVideos.length,
       columnCount,
-      width
+      width,
+      columnGap
     );
 
     columnsRef.current = nextLayout.columns;
     columnHeightsRef.current = nextLayout.heights;
     setColumns(nextLayout.columns);
     setVisibleCount(nextVisibleCount);
-  }, [filteredVideos, columnCount]);
+  }, [filteredVideos, columnCount, columnGap]);
 
   useLayoutEffect(() => {
     columnHeightsRef.current = columns.map((_, index) => (
@@ -197,13 +212,14 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
       const nextHeights = columnHeightsRef.current.length === columnCount
         ? [...columnHeightsRef.current]
         : Array(columnCount).fill(0);
-      const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount);
+      const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount, columnGap);
 
       distributeEntries(
         nextColumns,
         createGalleryEntries(newVideos, startIndex, filteredVideos.length),
         nextHeights,
-        width
+        width,
+        columnGap
       );
 
       columnsRef.current = nextColumns;
@@ -215,7 +231,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
       isLoadingMoreRef.current = false;
       loadMoreTimeoutRef.current = null;
     }, 350);
-  }, [columnCount, filteredVideos]);
+  }, [columnCount, columnGap, filteredVideos]);
 
   // IntersectionObserver for dynamic auto-loading as user scrolls
   useEffect(() => {
@@ -249,18 +265,18 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
   return (
     <div className="space-y-10">
       {/* Top Filter Bar per Blueprint */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-[#141d28] border border-white/10 glass-panel space-y-6 shadow-xl">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5">
+      <div className="filter-bar-container sticky top-[var(--main-nav-height)] z-40 p-6 sm:p-8 max-[767px]:!px-2 max-[767px]:!py-1 rounded-3xl bg-[#141d28]/95 border border-white/10 glass-panel space-y-6 max-[767px]:!space-y-0 shadow-xl">
+        <div className="filter-controls-row flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5 max-[767px]:!flex-row max-[767px]:!gap-2 max-[767px]:!overflow-x-auto">
           
           {/* Search Input with high contrast */}
-          <div className="relative flex-1 max-w-lg">
+          <div className="relative flex-1 max-w-lg max-[767px]:!w-40 max-[767px]:!min-w-[10rem] max-[767px]:!flex-none">
             <Search className="w-4 h-4 text-[#8B949E] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search prompt formulas by camera, mood, subject..."
-              className="w-full h-12 bg-[#1c2636] text-white placeholder-[#8B949E] text-sm pl-11 pr-16 rounded-xl border border-white/15 focus:border-[#66FCF1] focus:ring-2 focus:ring-[#66FCF1]/20 focus:outline-none transition-all shadow-inner"
+              placeholder="Search prompts..."
+              className="w-full h-12 max-[767px]:!h-9 bg-[#1c2636] text-white placeholder-[#8B949E] text-sm max-[767px]:!text-xs pl-11 pr-16 max-[767px]:!pr-10 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:ring-2 focus:ring-[#66FCF1]/20 focus:outline-none transition-all shadow-inner"
             />
             {search && (
               <button
@@ -273,14 +289,14 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
           </div>
 
           {/* Filter Dropdowns Grid (NO model dropdown) */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 max-[767px]:!flex-nowrap max-[767px]:!shrink-0 max-[767px]:!gap-2">
             {/* Aspect Ratio Dropdown */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 max-[767px]:!gap-1">
               <span className="text-xs font-mono uppercase text-[#8B949E] hidden sm:inline">Ratio:</span>
               <select
                 value={aspectRatioFilter}
                 onChange={(e) => setAspectRatioFilter(e.target.value)}
-                className="h-11 bg-[#1c2636] text-white text-xs font-medium px-3.5 rounded-xl border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
+                className="h-11 max-[767px]:!h-9 bg-[#1c2636] text-white text-xs font-medium px-3.5 max-[767px]:!px-2 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
               >
                 <option value="all">All Ratios</option>
                 <option value="16:9">16:9 Landscape</option>
@@ -289,12 +305,12 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
             </div>
 
             {/* Category / Style Dropdown */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 max-[767px]:!gap-1">
               <span className="text-xs font-mono uppercase text-[#8B949E] hidden sm:inline">Category:</span>
               <select
                 value={styleFilter}
                 onChange={(e) => setStyleFilter(e.target.value)}
-                className="h-11 bg-[#1c2636] text-white text-xs font-medium px-3.5 rounded-xl border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
+                className="h-11 max-[767px]:!h-9 bg-[#1c2636] text-white text-xs font-medium px-3.5 max-[767px]:!px-2 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
               >
                 <option value="all">All Categories</option>
                 <option value="commercial">Commercial & Ads</option>
@@ -310,7 +326,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
             {(aspectRatioFilter !== 'all' || styleFilter !== 'all' || search) && (
               <button
                 onClick={handleReset}
-                className="h-11 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-medium text-[#66FCF1] bg-[#45A29E]/15 border border-[#45A29E]/30 hover:bg-[#45A29E]/25 transition-colors cursor-pointer"
+                className="h-11 max-[767px]:!h-9 inline-flex items-center gap-1.5 px-3.5 max-[767px]:!px-2 rounded-xl max-[767px]:!rounded-lg text-xs font-medium text-[#66FCF1] bg-[#45A29E]/15 border border-[#45A29E]/30 hover:bg-[#45A29E]/25 transition-colors cursor-pointer"
                 title="Reset all filters"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -321,7 +337,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
         </div>
 
         {/* Dynamic Count Feedback */}
-        <div className="flex items-center justify-between text-xs text-[#8B949E] pt-3 border-t border-white/5 max-[768px]:flex-col max-[768px]:gap-2 max-[768px]:text-center max-[480px]:gap-2">
+        <div className="flex items-center justify-between text-xs text-[#8B949E] pt-3 border-t border-white/5 max-[767px]:hidden">
           <div className="flex items-center gap-2 max-[480px]:flex-wrap max-[480px]:justify-center max-[480px]:gap-x-1.5 max-[480px]:gap-y-1">
             <span>Showing</span>
             <span className="text-white font-mono font-medium">{displayedVideos.length}</span>
@@ -355,14 +371,18 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
           {/* Explicit columns keep existing cards in place as later batches append. */}
           <div
             ref={galleryRef}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 items-start"
+            className="grid items-start"
+            style={{
+              gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+              gap: `${columnGap}px`,
+            }}
           >
             {columns.map((column, columnIndex) => (
               <div
                 key={`masonry-column-${columnIndex}`}
                 ref={(element) => { columnRefs.current[columnIndex] = element; }}
                 data-masonry-column={columnIndex}
-                className="flex min-w-0 flex-col"
+                className="flex min-w-0 flex-col gap-2 md:gap-7"
               >
                 {column.map((item) => item.type === 'video' ? (
                   <VideoCard key={item.key} video={item.video} />

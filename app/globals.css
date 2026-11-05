@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --main-nav-height: 64px;
   --bg-color: #0d1117;
   --surface: #161f2c;
   --surface-hover: #1f2c3d;
@@ -16,6 +17,141 @@
   --border-accent: rgba(102, 252, 241, 0.35);
   --radius-card: 16px;
   --radius-btn: 10px;
+}
+
+@media (max-width: 639px) {
+  :root {
+    --main-nav-height: 48px;
+  }
+}
+
+.filter-controls-row {
+  scrollbar-width: none;
+}
+
+.filter-controls-row::-webkit-scrollbar {
+  display: none;
+}
+
+.touch-preview-button {
+  display: none;
+}
+
+.video-card-container,
+.native-grid-ad {
+  container-type: inline-size;
+}
+
+.native-grid-ad {
+  margin-bottom: 0;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .touch-preview-button {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 767px) {
+  .video-card-title {
+    padding: 5cqw 4cqw 4cqw;
+    font-size: clamp(9px, 6cqw, 12px);
+  }
+
+
+
+  .touch-preview-button {
+    top: 4cqw;
+    right: 4cqw;
+    min-height: 28px;
+    gap: 1.5cqw;
+    padding: 0 4cqw;
+    border-radius: 7px;
+    font-size: clamp(8px, 5cqw, 10px);
+  }
+
+  .touch-preview-button svg {
+    width: 3.5cqw;
+    height: 3.5cqw;
+  }
+
+  .native-grid-ad {
+    aspect-ratio: 0.82;
+    min-height: 0;
+    padding: 5cqw;
+    border-radius: 12px;
+  }
+
+  .native-ad-header {
+    gap: 2cqw;
+    font-size: 5cqw;
+    line-height: 1.25;
+  }
+
+  .native-ad-header > span:first-child {
+    gap: 2cqw;
+  }
+
+  .native-ad-header > span:last-child {
+    padding: 1cqw 2cqw;
+    font-size: 4cqw;
+  }
+
+  .native-ad-content {
+    gap: 3cqw;
+    padding: 2cqw 0;
+  }
+
+  .native-ad-content > *,
+  .native-ad-promo > * {
+    margin-block: 0;
+  }
+
+  .native-ad-promo {
+    max-width: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3cqw;
+  }
+
+  .native-ad-icon {
+    width: 20cqw;
+    height: 20cqw;
+    max-width: 38px;
+    max-height: 38px;
+    border-radius: 7cqw;
+    font-size: 7cqw;
+  }
+
+  .native-ad-title {
+    font-size: 7cqw;
+    line-height: 1.2;
+  }
+
+  .native-ad-description {
+    display: none;
+  }
+
+  .native-ad-promo > div:last-child {
+    padding-top: 0;
+  }
+
+  .native-ad-cta {
+    justify-content: center;
+    gap: 1cqw;
+    padding: 2cqw 3cqw;
+    border-radius: 5cqw;
+    font-size: 5cqw;
+  }
+
+  .native-ad-footer {
+    padding-top: 2cqw;
+    font-size: 4cqw;
+    line-height: 1.3;
+    letter-spacing: 0.06em;
+  }
 }
 
 @layer base {
@@ -197,4 +333,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   break-inside: avoid !important;
   page-break-inside: avoid !important;
   -webkit-column-break-inside: avoid !important;
+}
+
+.video-card-title{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;                  /* The container must have a defined or constrained width */
 }
