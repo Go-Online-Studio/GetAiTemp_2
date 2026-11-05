@@ -64,7 +64,7 @@ export default function HomeTrendingTabs({ videos = [] }) {
       </div>
 
       {/* Masonry Gallery of strictly 8 Cards (Height dynamic per aspect ratio) */}
-      <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-7 [column-fill:_balance]">
+      <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-7 [column-fill:_balance] [&>article]:mb-7">
         {displayedVideos.map((video) => (
           <VideoCard key={video._id} video={video} />
         ))}
