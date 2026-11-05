@@ -142,8 +142,8 @@ export default function Header() {
     : null;
 
   return (
-    <header className="sticky top-0 z-50 h-[var(--main-nav-height)] w-full glass-nav px-4 sm:px-8 transition-all">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 md:gap-8">
+    <header className="sticky top-0 z-50 h-[var(--main-nav-height)] w-full glass-nav px-4 sm:px-8 flex items-center justify-center transition-all">
+      <div className="max-w-7xl mx-auto flex grow items-center justify-between gap-4 md:gap-8">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-[#45A29E] to-[#1F2833] flex items-center justify-center border border-[#66FCF1]/30 group-hover:border-[#66FCF1] transition-colors shadow-[0_0_12px_rgba(102,252,241,0.2)]">
             <Film className="w-4 h-4 text-[#66FCF1]" />
