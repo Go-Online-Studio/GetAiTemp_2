@@ -76,6 +76,9 @@ export default async function VideoPage({ params }) {
 
   const categoryName = video.category?.name || 'Commercial';
   const modelName = video.aiTool || 'Studio AI';
+  const promptRequiresReferenceImage = /\b(?:reference image|product image|attach|upload|image-to-video)\b/i.test(video.prompt || '');
+  const description = video.description?.trim()
+    || `A ${categoryName.toLowerCase()} video prompt blueprint for ${video.title}, prepared for ${modelName}.`;
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-white flex flex-col selection:bg-[#45A29E]/30 selection:text-[#66FCF1]">
@@ -172,24 +175,6 @@ export default async function VideoPage({ params }) {
                 </div>
               </div>
 
-              {/* Video Description & Technique Breakdown */}
-              <div className="space-y-4 p-6 sm:p-8 rounded-3xl bg-[#141d28]/70 border border-white/10 shadow-lg">
-                <h2 className="font-['Space_Grotesk'] text-xl font-bold text-white">
-                  Cinematography & Scene Directives
-                </h2>
-                <p className="text-base text-[#C9D1D9] leading-[1.8]">
-                  {video.description}
-                </p>
-                {video.tags && video.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {video.tags.map((tag) => (
-                      <span key={tag} className="text-xs font-mono text-[#8B949E] bg-[#1c2636] px-3 py-1 rounded-lg border border-white/10">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* RIGHT COLUMN: Title, Technique Notes, Rewarded Prompt Container & Medium Rectangle Ad */}
@@ -201,18 +186,67 @@ export default async function VideoPage({ params }) {
                   <Sparkles className="w-3.5 h-3.5 text-[#66FCF1]" />
                   <span>{categoryName} Prompt Blueprint</span>
                 </div>
-                <h1 className="font-['Space_Grotesk'] text-2xl sm:text-4xl font-bold tracking-tight text-white leading-snug">
-                  {video.title}
-                </h1>
-                
-                {/* Technique note */}
+                <div className="space-y-3">
+                  <h1 className="font-['Space_Grotesk'] text-2xl font-bold leading-snug tracking-tight text-white sm:text-4xl">
+                    {video.title}
+                  </h1>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#66FCF1]/30 bg-[#45A29E]/10 px-2.5 py-1 text-[11px] font-mono font-semibold text-[#66FCF1]">
+                    <Cpu className="h-3 w-3" />
+                    {modelName}
+                  </span>
+                </div>
+              </div>
+
+              {/* One consolidated description and usage guide directly above the prompt. */}
+              <section className="space-y-4 rounded-3xl border border-white/10 bg-[#141d28]/70 p-5 shadow-lg sm:p-6" aria-labelledby="prompt-guide-title">
+                <div>
+                  <h2 id="prompt-guide-title" className="font-['Space_Grotesk'] text-lg font-bold text-white">
+                    Prompt Directives & How to Use
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-[#C9D1D9]">
+                    {description}
+                  </p>
+                </div>
+
                 {video.technique && (
-                  <div className="p-4 rounded-2xl bg-[#45A29E]/10 border border-[#45A29E]/30 text-sm text-[#C9D1D9] leading-relaxed">
-                    <span className="font-bold text-[#66FCF1]">Directorial Technique: </span>
+                  <p className="rounded-xl border border-[#45A29E]/30 bg-[#45A29E]/10 p-3 text-sm leading-relaxed text-[#C9D1D9]">
+                    <span className="font-bold text-[#66FCF1]">Directorial technique: </span>
                     {video.technique}
+                  </p>
+                )}
+
+                <div className="rounded-2xl border border-white/10 bg-[#0d1117]/70 p-4">
+                  <h3 className="mb-2 text-xs font-mono font-semibold uppercase tracking-wide text-[#66FCF1]">
+                    Recommended workflow
+                  </h3>
+                  <ol className="list-decimal space-y-2 pl-4 text-xs leading-relaxed text-[#C9D1D9] sm:text-sm">
+                    <li>
+                      <strong className="text-white">Generate the video in {modelName}.</strong>{' '}
+                      This prompt is designed for {modelName}; other generators may interpret its camera and motion instructions differently.
+                    </li>
+                    <li>
+                      <strong className="text-white">Prepare reference images separately.</strong>{' '}
+                      {promptRequiresReferenceImage
+                        ? `The prompt calls for an image input. Create or choose that still in an image tool, then upload it to ${modelName} if image references are supported.`
+                        : `A source image is not required by this prompt. If you choose to use one, create it with an image tool and attach it in ${modelName} only if supported.`}
+                    </li>
+                    <li>
+                      <strong className="text-white">Personalize before generating.</strong>{' '}
+                      Replace bracketed placeholders, set the aspect ratio and duration in the video tool, then keep the scene, camera, and lighting directives together when you run it.
+                    </li>
+                  </ol>
+                </div>
+
+                {video.tags && video.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {video.tags.map((tag) => (
+                      <span key={tag} className="rounded-lg border border-white/10 bg-[#1c2636] px-2.5 py-1 text-[11px] font-mono text-[#8B949E]">
+                        #{tag}
+                      </span>
+                    ))}
                   </div>
                 )}
-              </div>
+              </section>
 
               {/* REWARDED AD GATED PROMPT CONTAINER:
                   Prompt is blurred and locked behind a sponsor ad until user watches */}

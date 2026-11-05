@@ -7,7 +7,7 @@ import { Film, Menu, X } from 'lucide-react';
 
 const navigationLinks = [
   { href: '/about', label: 'About' },
-  { href: '/videos', label: 'Browse' },
+  { href: '/videos', label: 'Search' },
   { href: '/contact', label: 'Contact' },
 ];
 

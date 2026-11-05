@@ -100,7 +100,7 @@ function VideoCard({ video }) {
           title={video.title}
           className="absolute inset-0 z-[4] flex items-end"
         >
-          <span className="video-card-title line-clamp-1 w-full bg-gradient-to-t from-black/85 to-transparent px-2.5 pb-2.5 pt-8 font-['Space_Grotesk'] text-xs font-semibold leading-tight text-white sm:px-4 sm:pb-4 sm:text-base">
+          <span className="video-card-title w-full line-clamp-1 bg-gradient-to-t from-black/85 to-transparent px-2.5 pb-2.5 pt-8 font-['Space_Grotesk'] text-xs font-semibold leading-tight text-white sm:px-4 sm:pb-4 sm:text-base">
             {video.title}
           </span>
         </Link>

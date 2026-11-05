@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } fr
 import VideoCard from './VideoCard';
 import AdSlot from './AdSlot';
 import { Search, RotateCcw, ArrowDown } from 'lucide-react';
+import { getLatestVideos } from '@/lib/trending-filters';
 
 const BATCH_SIZE = 8;
 const DESKTOP_COLUMN_GAP = 28;
@@ -88,14 +89,16 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
 
   // Filter videos (pure category, ratio, search - NO Gemini / Flow AI model filters)
   const filteredVideos = useMemo(() => {
-    return initialVideos.filter((video) => {
+    const sourceVideos = styleFilter === 'latest' ? getLatestVideos(initialVideos) : initialVideos;
+
+    return sourceVideos.filter((video) => {
       // Aspect Ratio match
       if (aspectRatioFilter !== 'all') {
         if ((video.aspectRatio || '16:9') !== aspectRatioFilter) return false;
       }
 
       // Style & Category match
-      if (styleFilter !== 'all') {
+      if (styleFilter !== 'all' && styleFilter !== 'latest') {
         const catSlug = (video.category?.slug || '').toLowerCase();
         const catName = (video.category?.name || '').toLowerCase();
         const style = (video.style || '').toLowerCase();
@@ -313,6 +316,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
                 className="h-11 max-[767px]:!h-9 bg-[#1c2636] text-white text-xs font-medium px-3.5 max-[767px]:!px-2 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
               >
                 <option value="all">All Categories</option>
+                <option value="latest">Latest Trends</option>
                 <option value="commercial">Commercial & Ads</option>
                 <option value="cinematic">Cinematic</option>
                 <option value="product-macro">Product Macro</option>
