@@ -28,15 +28,15 @@ export default function HomeTrendingTabs({ videos = [] }) {
   return (
     <div className="space-y-8">
       {/* Tab Filter Switcher (Featured first, categories only, NO 'All' button) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pb-5">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:pb-0">
           {CATEGORY_TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                className={`shrink-0 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer sm:px-4 sm:py-2.5 sm:rounded-xl ${
                   isActive
                     ? 'bg-[#45A29E] text-[#0a0e14] shadow-[0_0_14px_rgba(69,162,158,0.5)] font-bold'
                     : 'bg-[#141d28] text-[#C9D1D9] hover:text-white hover:bg-[#1a2533] border border-white/10'
@@ -49,7 +49,7 @@ export default function HomeTrendingTabs({ videos = [] }) {
         </div>
 
         {/* Status Indicator & Quick Link */}
-        <div className="flex items-center gap-3 text-xs font-mono text-[#8B949E]">
+        <div className="hidden items-center gap-3 text-xs font-mono text-[#8B949E] sm:flex">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#66FCF1] animate-pulse" />
             <span>Showing top {displayedVideos.length} {activeTabMeta.label} formulas</span>
@@ -71,18 +71,18 @@ export default function HomeTrendingTabs({ videos = [] }) {
       </div>
 
       {/* View More in [Category] CTA Card below the section */}
-      <div className="pt-4 flex flex-col sm:flex-row items-center justify-between p-6 sm:p-8 rounded-3xl bg-[#141d28] border border-white/10 glass-panel gap-6 shadow-xl">
-        <div className="space-y-1.5 text-center sm:text-left">
-          <div className="text-base sm:text-lg font-['Space_Grotesk'] font-bold text-white flex items-center justify-center sm:justify-start gap-2.5">
+      <div className="pt-4 flex flex-col sm:flex-row items-center justify-between p-6 sm:p-8 rounded-3xl bg-[#141d28] border border-white/10 glass-panel gap-6 max-[640px]:gap-4 max-[360px]:p-4">
+        <div className="space-y-1.5 text-center sm:text-left max-[640px]:w-full">
+          <div className="text-base sm:text-lg font-['Space_Grotesk'] font-bold text-white flex items-center justify-center sm:justify-start gap-2.5 max-[640px]:flex-col max-[640px]:gap-2 max-[640px]:text-center">
             <Sparkles className="w-4 h-4 text-[#66FCF1]" />
             <span>Looking for more {activeTabMeta.label} prompts?</span>
             {allCategoryVideos.length > 8 && (
-              <span className="text-xs font-mono font-medium text-[#45A29E] bg-[#45A29E]/10 px-2.5 py-0.5 rounded-full border border-[#45A29E]/30">
+              <span className="text-xs font-mono font-medium text-[#45A29E] bg-[#45A29E]/10 px-2.5 py-0.5 rounded-full border border-[#45A29E]/30 max-[640px]:mx-auto">
                 +{allCategoryVideos.length - 8} more available
               </span>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-[#8B949E] max-w-xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#8B949E] max-w-xl leading-relaxed max-[640px]:mx-auto max-[640px]:px-3">
             Access our complete repository of {activeTabMeta.label.toLowerCase()} video prompt formulas with progressive loading, aspect ratio filtering, and instant clipboard copy in the Browse Library.
           </p>
         </div>

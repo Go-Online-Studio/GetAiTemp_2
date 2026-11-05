@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { memo, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Play, Copy, Check } from 'lucide-react';
 import { getMediaAspectClass } from '@/lib/trending-filters';
 
-export default function VideoCard({ video }) {
+function VideoCard({ video }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -201,3 +201,5 @@ export default function VideoCard({ video }) {
     </div>
   );
 }
+
+export default memo(VideoCard);

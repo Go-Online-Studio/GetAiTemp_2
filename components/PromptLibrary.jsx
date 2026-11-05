@@ -1,20 +1,74 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import VideoCard from './VideoCard';
-import CardSkeleton from './CardSkeleton';
 import AdSlot from './AdSlot';
-import { Search, RotateCcw, ArrowDown, Sparkles } from 'lucide-react';
+import { Search, RotateCcw, ArrowDown } from 'lucide-react';
 
 const BATCH_SIZE = 8;
+const COLUMN_GAP = 28;
+
+function getColumnCount(width) {
+  if (width >= 1280) return 4;
+  if (width >= 1024) return 3;
+  if (width >= 640) return 2;
+  return 1;
+}
+
+function getColumnWidth(galleryWidth, columnCount) {
+  return Math.max(1, (galleryWidth - COLUMN_GAP * (columnCount - 1)) / columnCount);
+}
+
+function getEstimatedItemHeight(item, columnWidth) {
+  if (item.type === 'ad') return 440;
+
+  const [ratioWidth, ratioHeight] = (item.video.aspectRatio || '16:9').split(':').map(Number);
+  const mediaHeight = ratioWidth && ratioHeight ? columnWidth * ratioHeight / ratioWidth : columnWidth * 9 / 16;
+  return mediaHeight + 190;
+}
+
+function createGalleryEntries(videos, startIndex, totalCount) {
+  const entries = [];
+
+  videos.forEach((video, offset) => {
+    const absoluteIndex = startIndex + offset;
+
+    if (absoluteIndex > 0 && absoluteIndex % BATCH_SIZE === 0) {
+      entries.push({ type: 'ad', key: `native-ad-${absoluteIndex}` });
+    }
+
+    entries.push({ type: 'video', key: `video-${video._id}`, video });
+  });
+
+  return entries.filter((entry) => entry.type !== 'ad' || Number(entry.key.split('-').at(-1)) < totalCount);
+}
+
+function distributeEntries(columns, entries, heights, columnWidth) {
+  entries.forEach((entry) => {
+    let shortestColumn = 0;
+
+    for (let index = 1; index < heights.length; index += 1) {
+      if (heights[index] < heights[shortestColumn]) shortestColumn = index;
+    }
+
+    columns[shortestColumn].push(entry);
+    heights[shortestColumn] += getEstimatedItemHeight(entry, columnWidth);
+  });
+}
+
+function createMasonryLayout(videos, visibleCount, totalCount, columnCount, columnWidth) {
+  const columns = Array.from({ length: columnCount }, () => []);
+  const heights = Array(columnCount).fill(0);
+  const entries = createGalleryEntries(videos.slice(0, visibleCount), 0, totalCount);
+
+  distributeEntries(columns, entries, heights, columnWidth);
+  return { columns, heights };
+}
 
 export default function PromptLibrary({ initialVideos = [], categories = [], initialSearch = '', initialCategory = 'all' }) {
   const [search, setSearch] = useState(initialSearch);
   const [aspectRatioFilter, setAspectRatioFilter] = useState('all');
   const [styleFilter, setStyleFilter] = useState(initialCategory);
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const sentinelRef = useRef(null);
 
   // Synchronize styleFilter if initialCategory prop changes (e.g. from homepage category link)
   useEffect(() => {
@@ -62,23 +116,106 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
     });
   }, [initialVideos, aspectRatioFilter, styleFilter, search]);
 
-  // Reset pagination when search or filters change
+  const initialVisibleCount = Math.min(BATCH_SIZE, filteredVideos.length);
+  const [columnCount, setColumnCount] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
+  const [columns, setColumns] = useState(() => createMasonryLayout(
+    filteredVideos,
+    initialVisibleCount,
+    filteredVideos.length,
+    1,
+    320
+  ).columns);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const sentinelRef = useRef(null);
+  const galleryRef = useRef(null);
+  const columnRefs = useRef([]);
+  const columnsRef = useRef(columns);
+  const columnHeightsRef = useRef(Array(columnCount).fill(0));
+  const visibleCountRef = useRef(initialVisibleCount);
+  const filteredVideosRef = useRef(filteredVideos);
+  const isLoadingMoreRef = useRef(false);
+  const loadMoreTimeoutRef = useRef(null);
+
   useEffect(() => {
-    setVisibleCount(BATCH_SIZE);
+    const updateColumns = () => setColumnCount(getColumnCount(window.innerWidth));
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, []);
+
+  useLayoutEffect(() => {
+    const sourceChanged = filteredVideosRef.current !== filteredVideos;
+    const nextVisibleCount = sourceChanged
+      ? Math.min(BATCH_SIZE, filteredVideos.length)
+      : Math.min(visibleCountRef.current, filteredVideos.length);
+
+    filteredVideosRef.current = filteredVideos;
+    visibleCountRef.current = nextVisibleCount;
+    isLoadingMoreRef.current = false;
     setIsLoadingMore(false);
-  }, [search, aspectRatioFilter, styleFilter]);
+
+    if (loadMoreTimeoutRef.current !== null) {
+      window.clearTimeout(loadMoreTimeoutRef.current);
+      loadMoreTimeoutRef.current = null;
+    }
+
+    const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount);
+    const nextLayout = createMasonryLayout(
+      filteredVideos,
+      nextVisibleCount,
+      filteredVideos.length,
+      columnCount,
+      width
+    );
+
+    columnsRef.current = nextLayout.columns;
+    columnHeightsRef.current = nextLayout.heights;
+    setColumns(nextLayout.columns);
+    setVisibleCount(nextVisibleCount);
+  }, [filteredVideos, columnCount]);
+
+  useLayoutEffect(() => {
+    columnHeightsRef.current = columns.map((_, index) => (
+      columnRefs.current[index]?.getBoundingClientRect().height || 0
+    ));
+  }, [columns]);
 
   const hasMore = visibleCount < filteredVideos.length;
 
-  const loadMore = () => {
-    if (isLoadingMore || !hasMore) return;
+  const loadMore = useCallback(() => {
+    if (isLoadingMoreRef.current || visibleCountRef.current >= filteredVideos.length) return;
+
+    isLoadingMoreRef.current = true;
     setIsLoadingMore(true);
-    // Smooth realistic delay to display minimal CSS skeleton loader cards
-    setTimeout(() => {
-      setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredVideos.length));
+
+    loadMoreTimeoutRef.current = window.setTimeout(() => {
+      const startIndex = visibleCountRef.current;
+      const nextVisibleCount = Math.min(startIndex + BATCH_SIZE, filteredVideos.length);
+      const newVideos = filteredVideos.slice(startIndex, nextVisibleCount);
+      const nextColumns = columnsRef.current.map((column) => [...column]);
+      const nextHeights = columnHeightsRef.current.length === columnCount
+        ? [...columnHeightsRef.current]
+        : Array(columnCount).fill(0);
+      const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount);
+
+      distributeEntries(
+        nextColumns,
+        createGalleryEntries(newVideos, startIndex, filteredVideos.length),
+        nextHeights,
+        width
+      );
+
+      columnsRef.current = nextColumns;
+      columnHeightsRef.current = nextHeights;
+      visibleCountRef.current = nextVisibleCount;
+      setColumns(nextColumns);
+      setVisibleCount(nextVisibleCount);
       setIsLoadingMore(false);
+      isLoadingMoreRef.current = false;
+      loadMoreTimeoutRef.current = null;
     }, 350);
-  };
+  }, [columnCount, filteredVideos]);
 
   // IntersectionObserver for dynamic auto-loading as user scrolls
   useEffect(() => {
@@ -86,42 +223,28 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore) {
-          loadMore();
-        }
+        if (entries[0].isIntersecting) loadMore();
       },
       { rootMargin: '300px' }
     );
 
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, isLoadingMore, filteredVideos.length]);
+  }, [hasMore, loadMore]);
+
+  useEffect(() => () => {
+    if (loadMoreTimeoutRef.current !== null) {
+      window.clearTimeout(loadMoreTimeoutRef.current);
+    }
+  }, []);
 
   const handleReset = () => {
     setSearch('');
     setAspectRatioFilter('all');
     setStyleFilter('all');
-    setVisibleCount(BATCH_SIZE);
   };
 
   const displayedVideos = filteredVideos.slice(0, visibleCount);
-
-  // Build grid items with a Native Grid Ad inserted every 8th item
-  const gridElements = useMemo(() => {
-    const items = [];
-    displayedVideos.forEach((video, index) => {
-      items.push(<VideoCard key={video._id} video={video} />);
-      if ((index + 1) % 8 === 0 && index + 1 < displayedVideos.length) {
-        items.push(
-          <AdSlot
-            key={`native-ad-${index}`}
-            position="native-grid"
-          />
-        );
-      }
-    });
-    return items;
-  }, [displayedVideos]);
 
   return (
     <div className="space-y-10">
@@ -198,15 +321,15 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
         </div>
 
         {/* Dynamic Count Feedback */}
-        <div className="flex items-center justify-between text-xs text-[#8B949E] pt-3 border-t border-white/5">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between text-xs text-[#8B949E] pt-3 border-t border-white/5 max-[768px]:flex-col max-[768px]:gap-2 max-[768px]:text-center max-[480px]:gap-2">
+          <div className="flex items-center gap-2 max-[480px]:flex-wrap max-[480px]:justify-center max-[480px]:gap-x-1.5 max-[480px]:gap-y-1">
             <span>Showing</span>
             <span className="text-white font-mono font-medium">{displayedVideos.length}</span>
             <span>of</span>
             <span className="text-[#66FCF1] font-mono font-semibold">{filteredVideos.length}</span>
             <span>prompt formulas</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 max-[768px]:justify-center">
             <span className="w-1.5 h-1.5 rounded-full bg-[#66FCF1] animate-pulse" />
             <span>Ready for instant clipboard copy</span>
           </div>
@@ -229,19 +352,25 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
         </div>
       ) : (
         <div className="space-y-10">
-          {/* Responsive Masonry Gallery for 1000+ cards */}
-          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-7 [column-fill:_balance]">
-            {gridElements}
-
-            {/* Skeleton Cards with alternating aspect ratios while dynamically loading */}
-            {isLoadingMore && (
-              <>
-                <CardSkeleton aspectRatio="9:16" />
-                <CardSkeleton aspectRatio="16:9" />
-                <CardSkeleton aspectRatio="16:9" />
-                <CardSkeleton aspectRatio="9:16" />
-              </>
-            )}
+          {/* Explicit columns keep existing cards in place as later batches append. */}
+          <div
+            ref={galleryRef}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 items-start"
+          >
+            {columns.map((column, columnIndex) => (
+              <div
+                key={`masonry-column-${columnIndex}`}
+                ref={(element) => { columnRefs.current[columnIndex] = element; }}
+                data-masonry-column={columnIndex}
+                className="flex min-w-0 flex-col"
+              >
+                {column.map((item) => item.type === 'video' ? (
+                  <VideoCard key={item.key} video={item.video} />
+                ) : (
+                  <AdSlot key={item.key} position="native-grid" />
+                ))}
+              </div>
+            ))}
           </div>
 
           {/* Dynamic Scroll Sentinel & Load More Trigger */}
