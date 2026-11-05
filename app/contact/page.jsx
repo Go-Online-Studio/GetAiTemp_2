@@ -85,9 +85,6 @@ export default async function ContactPage(props) {
             {/* RIGHT COLUMN: Interactive Form */}
             <div className="lg:col-span-6 w-full space-y-8">
               <ContactForm initialSubject={initialSubject} />
-              
-              {/* Contextual Ad Placement below contact form */}
-              <AdSlot position="medium-rectangle" />
             </div>
 
           </div>
