@@ -105,7 +105,7 @@ export default async function VideoPage({ params }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
             
             {/* LEFT COLUMN: Large Video Player & Technical Metadata (60% Desktop Split) */}
-            <div className="lg:col-span-7 space-y-8">
+            <div className="lg:col-span-7 lg:self-stretch space-y-8">
               <div className="rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
                 <VideoPlayer
                   videoId={video._id}
@@ -116,62 +116,63 @@ export default async function VideoPage({ params }) {
                 />
               </div>
 
-              {/* In-feed ad unit below video player */}
-              <div className="pt-1">
-                <AdSlot position="below-video" />
-              </div>
-
-              {/* Structured Metadata Strip Below Video per Blueprint */}
-              <div className="p-6 rounded-3xl bg-[#141d28] border border-white/10 shadow-lg space-y-4">
-                <div className="text-xs font-mono uppercase tracking-wider text-[#8B949E]">
-                  Production Specifications
+              <div className="space-y-8 lg:sticky lg:top-24 lg:self-start">
+                {/* In-feed ad unit below video player */}
+                <div className="pt-1">
+                  <AdSlot position="below-video" />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 text-sm">
-                  
-                  {/* Aspect Ratio */}
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-white/5 text-[#45A29E] shrink-0">
-                      <Monitor className="w-4 h-4" />
+
+                {/* Structured Metadata Strip Below Video per Blueprint */}
+                <div className="p-6 rounded-3xl bg-[#141d28] border border-white/10 shadow-lg space-y-4">
+                  <div className="text-xs font-mono uppercase tracking-wider text-[#8B949E]">
+                    Production Specifications
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 text-sm">
+
+                    {/* Aspect Ratio */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/5 text-[#45A29E] shrink-0">
+                        <Monitor className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-[#8B949E] uppercase font-mono">Aspect Ratio</div>
+                        <div className="font-bold text-white mt-0.5">{video.aspectRatio || '16:9'}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-[11px] text-[#8B949E] uppercase font-mono">Aspect Ratio</div>
-                      <div className="font-bold text-white mt-0.5">{video.aspectRatio || '16:9'}</div>
+
+                    {/* Resolution */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/5 text-[#66FCF1] shrink-0">
+                        <Clapperboard className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-[#8B949E] uppercase font-mono">Resolution</div>
+                        <div className="font-bold text-white mt-0.5">{video.resolution || '4K HDR'}</div>
+                      </div>
+                    </div>
+
+                    {/* Duration */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/5 text-[#45A29E] shrink-0">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-[#8B949E] uppercase font-mono">Duration</div>
+                        <div className="font-bold text-white mt-0.5">{video.duration ? `${video.duration} sec` : '10 sec'}</div>
+                      </div>
+                    </div>
+
+                    {/* Category */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/5 text-[#66FCF1] shrink-0">
+                        <Cpu className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-[#8B949E] uppercase font-mono">Category</div>
+                        <div className="font-bold text-[#66FCF1] mt-0.5">{categoryName}</div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Resolution */}
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-white/5 text-[#66FCF1] shrink-0">
-                      <Clapperboard className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-[#8B949E] uppercase font-mono">Resolution</div>
-                      <div className="font-bold text-white mt-0.5">{video.resolution || '4K HDR'}</div>
-                    </div>
-                  </div>
-
-                  {/* Duration */}
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-white/5 text-[#45A29E] shrink-0">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-[#8B949E] uppercase font-mono">Duration</div>
-                      <div className="font-bold text-white mt-0.5">{video.duration ? `${video.duration} sec` : '10 sec'}</div>
-                    </div>
-                  </div>
-
-                  {/* Category */}
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-white/5 text-[#66FCF1] shrink-0">
-                      <Cpu className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-[#8B949E] uppercase font-mono">Category</div>
-                      <div className="font-bold text-[#66FCF1] mt-0.5">{categoryName}</div>
-                    </div>
-                  </div>
-
                 </div>
               </div>
 
@@ -257,11 +258,6 @@ export default async function VideoPage({ params }) {
                 videoId={video._id}
                 slug={video.slug}
               />
-
-              {/* Ad Placement: 300x250 Medium Rectangle Ad Placed Directly Below Prompt Container per Blueprint */}
-              <div className="pt-2">
-                <AdSlot position="medium-rectangle" />
-              </div>
 
             </div>
 
