@@ -268,23 +268,23 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
   return (
     <div className="space-y-10">
       {/* Top Filter Bar per Blueprint */}
-      <div className="filter-bar-container sticky top-[var(--main-nav-height)] z-40 p-6 sm:p-8 max-[767px]:!px-2 max-[767px]:!py-1 rounded-3xl bg-[#141d28]/95 border border-white/10 glass-panel space-y-6 max-[767px]:!space-y-0 shadow-xl">
-        <div className="filter-controls-row flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5 max-[767px]:!flex-row max-[767px]:!gap-2 max-[767px]:!overflow-x-auto">
+      <div className="filter-bar-container sticky top-[calc(var(--main-nav-height)_+_8px)] z-40 p-2 sm:p-3 max-[767px]:!px-2 max-[767px]:!py-1 !rounded-xl md:rounded-3xl bg-[#141d28]/95 border border-white/10 glass-panel space-y-2 max-[767px]:!space-y-0 shadow-xl">
+        <div className="filter-controls-row flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 max-[767px]:!flex-row max-[767px]:!gap-2 max-[767px]:!overflow-x-auto">
           
           {/* Search Input with high contrast */}
           <div className="relative flex-1 max-w-lg max-[767px]:!w-40 max-[767px]:!min-w-[10rem] max-[767px]:!flex-none">
-            <Search className="w-4 h-4 text-[#8B949E] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#8B949E] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search prompts..."
-              className="w-full h-12 max-[767px]:!h-9 bg-[#1c2636] text-white placeholder-[#8B949E] text-sm max-[767px]:!text-xs pl-11 pr-16 max-[767px]:!pr-10 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:ring-2 focus:ring-[#66FCF1]/20 focus:outline-none transition-all shadow-inner"
+              className="w-full h-10 max-[767px]:!h-8 bg-[#1c2636] text-white placeholder-[#8B949E] text-sm max-[767px]:!text-xs pl-9 pr-14 max-[767px]:!pr-9 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:ring-2 focus:ring-[#66FCF1]/20 focus:outline-none transition-all shadow-inner"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#8B949E] hover:text-white px-2 py-1 rounded bg-[#141d28] cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#8B949E] hover:text-white px-1.5 py-0.5 rounded bg-[#141d28] cursor-pointer"
               >
                 Clear
               </button>
@@ -295,11 +295,11 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
           <div className="flex flex-wrap items-center gap-3 max-[767px]:!flex-nowrap max-[767px]:!shrink-0 max-[767px]:!gap-2">
             {/* Aspect Ratio Dropdown */}
             <div className="flex items-center gap-2 max-[767px]:!gap-1">
-              <span className="text-xs font-mono uppercase text-[#8B949E] hidden sm:inline">Ratio:</span>
+              <span className="text-[11px] font-mono uppercase text-[#8B949E] hidden sm:inline">Ratio:</span>
               <select
                 value={aspectRatioFilter}
                 onChange={(e) => setAspectRatioFilter(e.target.value)}
-                className="h-11 max-[767px]:!h-9 bg-[#1c2636] text-white text-xs font-medium px-3.5 max-[767px]:!px-2 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
+                className="h-9 max-[767px]:!h-8 bg-[#1c2636] text-white text-xs font-medium px-3 max-[767px]:!px-1.5 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
               >
                 <option value="all">All Ratios</option>
                 <option value="16:9">16:9 Landscape</option>
@@ -309,11 +309,11 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
 
             {/* Category / Style Dropdown */}
             <div className="flex items-center gap-2 max-[767px]:!gap-1">
-              <span className="text-xs font-mono uppercase text-[#8B949E] hidden sm:inline">Category:</span>
+              <span className="text-[11px] font-mono uppercase text-[#8B949E] hidden sm:inline">Category:</span>
               <select
                 value={styleFilter}
                 onChange={(e) => setStyleFilter(e.target.value)}
-                className="h-11 max-[767px]:!h-9 bg-[#1c2636] text-white text-xs font-medium px-3.5 max-[767px]:!px-2 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
+                className="h-9 max-[767px]:!h-8 bg-[#1c2636] text-white text-xs font-medium px-3 max-[767px]:!px-1.5 rounded-xl max-[767px]:!rounded-lg border border-white/15 focus:border-[#66FCF1] focus:outline-none cursor-pointer shadow-inner"
               >
                 <option value="all">All Categories</option>
                 <option value="latest">Latest Trends</option>
@@ -330,7 +330,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
             {(aspectRatioFilter !== 'all' || styleFilter !== 'all' || search) && (
               <button
                 onClick={handleReset}
-                className="h-11 max-[767px]:!h-9 inline-flex items-center gap-1.5 px-3.5 max-[767px]:!px-2 rounded-xl max-[767px]:!rounded-lg text-xs font-medium text-[#66FCF1] bg-[#45A29E]/15 border border-[#45A29E]/30 hover:bg-[#45A29E]/25 transition-colors cursor-pointer"
+                className="h-9 max-[767px]:!h-8 inline-flex items-center gap-1 px-3 max-[767px]:!px-1.5 rounded-xl max-[767px]:!rounded-lg text-xs font-medium text-[#66FCF1] bg-[#45A29E]/15 border border-[#45A29E]/30 hover:bg-[#45A29E]/25 transition-colors cursor-pointer"
                 title="Reset all filters"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
