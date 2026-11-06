@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Pause, Play } from 'lucide-react';
 import { getOptimizedVideoUrl } from '@/lib/cloudinary-client';
 import { getMediaAspectClass } from '@/lib/trending-filters';
+import { recordViewApi } from '@/lib/api';
 
 function VideoCard({ video }) {
   const [isPreviewActive, setIsPreviewActive] = useState(false);
@@ -78,7 +79,10 @@ function VideoCard({ video }) {
             playsInline
             autoPlay
             preload="none"
-            onPlaying={() => setIsVideoLoaded(true)}
+            onPlaying={() => {
+              setIsVideoLoaded(true);
+              if (video._id) recordViewApi(video._id);
+            }}
             onError={() => setVideoError(true)}
             className={`absolute inset-0 z-[2] h-full w-full object-cover transition-opacity duration-300 ${
               isVideoLoaded ? 'opacity-100' : 'opacity-0'

@@ -19,7 +19,7 @@ export default async function VideosPage(props) {
 
   const [categories, { videos, total }] = await Promise.all([
     getCategories(),
-    getVideos({ limit: 100, includePrompt: true, status: 'published' }),
+    getVideos({ page: 1, limit: 8, category, search, includePrompt: false, status: 'published' }),
   ]);
 
   return (
@@ -43,7 +43,7 @@ export default async function VideosPage(props) {
 
               {/* Total Prompt Count Dynamically Displayed */}
               <div className="text-xs font-mono text-[#45A29E] bg-[#45A29E]/10 px-4 py-2 rounded-xl border border-[#45A29E]/25 self-start sm:self-auto shadow-sm">
-                Total Verified Formulas: <span className="font-bold text-white ml-1">{total || videos.length}</span>
+                Total Verified Formulas: <span className="font-bold text-white ml-1">{total || (videos ? videos.length : 0)}</span>
               </div>
             </div>
           </div>
@@ -55,8 +55,9 @@ export default async function VideosPage(props) {
 
           {/* Interactive Library with Filters & Native Grid Ad every 8 items */}
           <PromptLibrary
-            initialVideos={videos}
-            categories={categories}
+            initialVideos={videos || []}
+            initialTotal={total || 0}
+            categories={categories || []}
             initialSearch={search}
             initialCategory={category}
           />

@@ -11,7 +11,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { videos } = await getVideos({ limit: 60, status: 'published' });
+  const { videos } = await getVideos({ limit: 50, status: 'published' });
   const trendingVideos = videos || [];
 
   return (

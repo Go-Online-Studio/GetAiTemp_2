@@ -43,9 +43,11 @@ export default async function CategoryPage({ params }) {
     notFound();
   }
 
-  const { videos } = await getVideos({
-    limit: 100,
-    includePrompt: true,
+  const { videos, total } = await getVideos({
+    page: 1,
+    limit: 8,
+    category: slug === 'all' ? undefined : slug,
+    includePrompt: false,
     status: 'published',
   });
 
@@ -74,8 +76,9 @@ export default async function CategoryPage({ params }) {
           </section>
 
           <PromptLibrary
-            initialVideos={videos}
-            categories={allCategories}
+            initialVideos={videos || []}
+            initialTotal={total || 0}
+            categories={allCategories || []}
             initialCategory={slug === 'all' ? 'all' : slug}
           />
 

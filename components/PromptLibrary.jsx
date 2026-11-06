@@ -5,6 +5,7 @@ import VideoCard from './VideoCard';
 import AdSlot from './AdSlot';
 import { Search, RotateCcw, ArrowDown } from 'lucide-react';
 import { getLatestVideos } from '@/lib/trending-filters';
+import { fetchVideosBatch } from '@/lib/api';
 
 const BATCH_SIZE = 8;
 const DESKTOP_COLUMN_GAP = 28;
@@ -33,7 +34,7 @@ function getEstimatedItemHeight(item, columnWidth, columnGap) {
   }
 
   const [ratioWidth, ratioHeight] = (item.video.aspectRatio || '16:9').split(':').map(Number);
-  const mediaHeight = ratioWidth && ratioHeight ? columnWidth * ratioHeight / ratioWidth : columnWidth * 9 / 16;
+  const mediaHeight = ratioWidth && ratioHeight ? (columnWidth * ratioHeight) / ratioWidth : (columnWidth * 9) / 16;
   return mediaHeight + columnGap;
 }
 
@@ -47,7 +48,7 @@ function createGalleryEntries(videos, startIndex, totalCount) {
       entries.push({ type: 'ad', key: `native-ad-${absoluteIndex}` });
     }
 
-    entries.push({ type: 'video', key: `video-${video._id}`, video });
+    entries.push({ type: 'video', key: `video-${video._id || absoluteIndex}`, video });
   });
 
   return entries.filter((entry) => entry.type !== 'ad' || Number(entry.key.split('-').at(-1)) < totalCount);
@@ -75,21 +76,34 @@ function createMasonryLayout(videos, visibleCount, totalCount, columnCount, colu
   return { columns, heights };
 }
 
-export default function PromptLibrary({ initialVideos = [], categories = [], initialSearch = '', initialCategory = 'all' }) {
+export default function PromptLibrary({
+  initialVideos = [],
+  categories = [],
+  initialSearch = '',
+  initialCategory = 'all',
+  initialTotal = 0,
+}) {
   const [search, setSearch] = useState(initialSearch);
   const [aspectRatioFilter, setAspectRatioFilter] = useState('all');
   const [styleFilter, setStyleFilter] = useState(initialCategory);
 
-  // Synchronize styleFilter if initialCategory prop changes (e.g. from homepage category link)
+  // Loaded feed state
+  const [videos, setVideos] = useState(initialVideos);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(initialVideos.length < (initialTotal || initialVideos.length + 1));
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const isFirstMountRef = useRef(true);
+
+  // Synchronize styleFilter if initialCategory prop changes
   useEffect(() => {
     if (initialCategory) {
       setStyleFilter(initialCategory);
     }
   }, [initialCategory]);
 
-  // Filter videos (pure category, ratio, search - NO Gemini / Flow AI model filters)
+  // Handle client-side filtering if local items are loaded or fallback is active
   const filteredVideos = useMemo(() => {
-    const sourceVideos = styleFilter === 'latest' ? getLatestVideos(initialVideos) : initialVideos;
+    const sourceVideos = styleFilter === 'latest' ? getLatestVideos(videos) : videos;
 
     return sourceVideos.filter((video) => {
       // Aspect Ratio match
@@ -109,9 +123,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
           style.includes(target) ||
           (target === 'social' && video.aspectRatio === '9:16');
 
-        if (!isMatch) {
-          return false;
-        }
+        if (!isMatch) return false;
       }
 
       // Search query match
@@ -126,30 +138,30 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
 
       return true;
     });
-  }, [initialVideos, aspectRatioFilter, styleFilter, search]);
+  }, [videos, aspectRatioFilter, styleFilter, search]);
 
-  const initialVisibleCount = Math.min(BATCH_SIZE, filteredVideos.length);
   const [columnCount, setColumnCount] = useState(INITIAL_COLUMN_COUNT);
   const [columnGap, setColumnGap] = useState(MOBILE_COLUMN_GAP);
-  const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
-  const [columns, setColumns] = useState(() => createMasonryLayout(
-    filteredVideos,
-    initialVisibleCount,
-    filteredVideos.length,
-    INITIAL_COLUMN_COUNT,
-    getColumnWidth(320, INITIAL_COLUMN_COUNT, MOBILE_COLUMN_GAP),
-    MOBILE_COLUMN_GAP
-  ).columns);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(Math.min(BATCH_SIZE, filteredVideos.length));
+  const [columns, setColumns] = useState(() =>
+    createMasonryLayout(
+      filteredVideos,
+      Math.min(BATCH_SIZE, filteredVideos.length),
+      filteredVideos.length,
+      INITIAL_COLUMN_COUNT,
+      getColumnWidth(320, INITIAL_COLUMN_COUNT, MOBILE_COLUMN_GAP),
+      MOBILE_COLUMN_GAP
+    ).columns
+  );
+
   const sentinelRef = useRef(null);
   const galleryRef = useRef(null);
   const columnRefs = useRef([]);
   const columnsRef = useRef(columns);
   const columnHeightsRef = useRef(Array(columnCount).fill(0));
-  const visibleCountRef = useRef(initialVisibleCount);
+  const visibleCountRef = useRef(visibleCount);
   const filteredVideosRef = useRef(filteredVideos);
   const isLoadingMoreRef = useRef(false);
-  const loadMoreTimeoutRef = useRef(null);
 
   useEffect(() => {
     const updateColumns = () => {
@@ -161,6 +173,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
     return () => window.removeEventListener('resize', updateColumns);
   }, []);
 
+  // Update layout when filtered videos or columns change
   useLayoutEffect(() => {
     const sourceChanged = filteredVideosRef.current !== filteredVideos;
     const nextVisibleCount = sourceChanged
@@ -171,11 +184,6 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
     visibleCountRef.current = nextVisibleCount;
     isLoadingMoreRef.current = false;
     setIsLoadingMore(false);
-
-    if (loadMoreTimeoutRef.current !== null) {
-      window.clearTimeout(loadMoreTimeoutRef.current);
-      loadMoreTimeoutRef.current = null;
-    }
 
     const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount, columnGap);
     const nextLayout = createMasonryLayout(
@@ -194,27 +202,23 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
   }, [filteredVideos, columnCount, columnGap]);
 
   useLayoutEffect(() => {
-    columnHeightsRef.current = columns.map((_, index) => (
-      columnRefs.current[index]?.getBoundingClientRect().height || 0
-    ));
+    columnHeightsRef.current = columns.map(
+      (_, index) => columnRefs.current[index]?.getBoundingClientRect().height || 0
+    );
   }, [columns]);
 
-  const hasMore = visibleCount < filteredVideos.length;
+  // Server Batch Loading for infinite scroll
+  const loadMore = useCallback(async () => {
+    if (isLoadingMoreRef.current) return;
 
-  const loadMore = useCallback(() => {
-    if (isLoadingMoreRef.current || visibleCountRef.current >= filteredVideos.length) return;
-
-    isLoadingMoreRef.current = true;
-    setIsLoadingMore(true);
-
-    loadMoreTimeoutRef.current = window.setTimeout(() => {
+    // Check if we already have unrendered items locally
+    if (visibleCountRef.current < filteredVideos.length) {
       const startIndex = visibleCountRef.current;
       const nextVisibleCount = Math.min(startIndex + BATCH_SIZE, filteredVideos.length);
       const newVideos = filteredVideos.slice(startIndex, nextVisibleCount);
       const nextColumns = columnsRef.current.map((column) => [...column]);
-      const nextHeights = columnHeightsRef.current.length === columnCount
-        ? [...columnHeightsRef.current]
-        : Array(columnCount).fill(0);
+      const nextHeights =
+        columnHeightsRef.current.length === columnCount ? [...columnHeightsRef.current] : Array(columnCount).fill(0);
       const width = getColumnWidth(galleryRef.current?.clientWidth || 320, columnCount, columnGap);
 
       distributeEntries(
@@ -230,32 +234,108 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
       visibleCountRef.current = nextVisibleCount;
       setColumns(nextColumns);
       setVisibleCount(nextVisibleCount);
+      return;
+    }
+
+    // Otherwise, fetch next batch from backend API
+    if (!hasMore) return;
+
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
+
+    try {
+      const nextPage = page + 1;
+      const res = await fetchVideosBatch({
+        page: nextPage,
+        limit: BATCH_SIZE,
+        category: styleFilter,
+        aspectRatio: aspectRatioFilter,
+        search,
+      });
+
+      if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setVideos((prev) => {
+          const existingIds = new Set(prev.map((v) => v._id || v.slug));
+          const fresh = res.data.filter((v) => !existingIds.has(v._id || v.slug));
+          return [...prev, ...fresh];
+        });
+        setPage(nextPage);
+        setHasMore(res.pagination?.hasMore ?? (res.data.length === BATCH_SIZE));
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.warn('Network batch fetch failed:', err.message);
+      setHasMore(false);
+    } finally {
       setIsLoadingMore(false);
       isLoadingMoreRef.current = false;
-      loadMoreTimeoutRef.current = null;
-    }, 350);
-  }, [columnCount, columnGap, filteredVideos]);
+    }
+  }, [hasMore, page, styleFilter, aspectRatioFilter, search, filteredVideos, columnCount, columnGap]);
 
   // IntersectionObserver for dynamic auto-loading as user scrolls
   useEffect(() => {
-    if (!sentinelRef.current || !hasMore) return;
+    if (!sentinelRef.current || (!hasMore && visibleCount >= filteredVideos.length)) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) loadMore();
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
       },
       { rootMargin: '300px' }
     );
 
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loadMore]);
+  }, [hasMore, visibleCount, filteredVideos.length, loadMore]);
 
-  useEffect(() => () => {
-    if (loadMoreTimeoutRef.current !== null) {
-      window.clearTimeout(loadMoreTimeoutRef.current);
+  // Re-fetch batch 1 when user modifies filters
+  useEffect(() => {
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return;
     }
-  }, []);
+
+    let isSubscribed = true;
+    const controller = new AbortController();
+
+    async function applyFilterBatch() {
+      setIsLoadingMore(true);
+      try {
+        const res = await fetchVideosBatch({
+          page: 1,
+          limit: BATCH_SIZE,
+          category: styleFilter,
+          aspectRatio: aspectRatioFilter,
+          search,
+          signal: controller.signal,
+        });
+
+        if (isSubscribed && res && res.success && Array.isArray(res.data)) {
+          setVideos(res.data);
+          setPage(1);
+          setHasMore(res.pagination?.hasMore ?? (res.data.length === BATCH_SIZE));
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.warn('Filter batch fetch error:', err.message);
+        }
+      } finally {
+        if (isSubscribed) setIsLoadingMore(false);
+      }
+    }
+
+    const timer = setTimeout(() => {
+      applyFilterBatch();
+    }, 250);
+
+    return () => {
+      isSubscribed = false;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [styleFilter, aspectRatioFilter, search]);
 
   const handleReset = () => {
     setSearch('');
@@ -264,13 +344,13 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
   };
 
   const displayedVideos = filteredVideos.slice(0, visibleCount);
+  const canShowMore = hasMore || visibleCount < filteredVideos.length;
 
   return (
     <div className="space-y-10">
-      {/* Top Filter Bar per Blueprint */}
+      {/* Top Filter Bar */}
       <div className="filter-bar-container sticky top-[calc(var(--main-nav-height)_+_8px)] z-40 p-2 sm:p-3 max-[767px]:!px-2 max-[767px]:!py-1 !rounded-xl md:rounded-3xl bg-[#141d28]/95 border border-white/10 glass-panel space-y-2 max-[767px]:!space-y-0 shadow-xl">
         <div className="filter-controls-row flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 max-[767px]:!flex-row max-[767px]:!gap-2 max-[767px]:!overflow-x-auto">
-          
           {/* Search Input with high contrast */}
           <div className="relative flex-1 max-w-lg max-[767px]:!w-40 max-[767px]:!min-w-[10rem] max-[767px]:!flex-none">
             <Search className="w-4 h-4 text-[#8B949E] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -291,7 +371,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
             )}
           </div>
 
-          {/* Filter Dropdowns Grid (NO model dropdown) */}
+          {/* Filter Dropdowns Grid */}
           <div className="flex flex-wrap items-center gap-3 max-[767px]:!flex-nowrap max-[767px]:!shrink-0 max-[767px]:!gap-2">
             {/* Aspect Ratio Dropdown */}
             <div className="flex items-center gap-2 max-[767px]:!gap-1">
@@ -317,12 +397,22 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
               >
                 <option value="all">All Categories</option>
                 <option value="latest">Latest Trends</option>
-                <option value="commercial">Commercial & Ads</option>
-                <option value="cinematic">Cinematic</option>
-                <option value="product-macro">Product Macro</option>
-                <option value="social">Social & Reels</option>
-                <option value="3d-motion">3D Motion</option>
-                <option value="narrative">Narrative</option>
+                {categories && categories.length > 0 ? (
+                  categories.map((cat) => (
+                    <option key={cat._id || cat.slug} value={cat.slug}>
+                      {cat.name}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="commercial">Commercial & Ads</option>
+                    <option value="cinematic">Cinematic</option>
+                    <option value="product-macro">Product Macro</option>
+                    <option value="social">Social & Reels</option>
+                    <option value="3d-motion">3D Motion</option>
+                    <option value="narrative">Narrative</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -356,23 +446,19 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
         </div>
       </div>
 
-      {/* Main Grid with Dynamic Cards & Skeleton Loading */}
-      {filteredVideos.length === 0 ? (
+      {/* Main Grid with Dynamic Cards */}
+      {filteredVideos.length === 0 && !isLoadingMore ? (
         <div className="py-24 text-center rounded-3xl bg-[#141d28]/40 border border-white/5 space-y-4">
           <p className="text-lg text-white font-semibold">No prompts match your current filters</p>
           <p className="text-sm text-[#8B949E] max-w-md mx-auto leading-relaxed">
             Try resetting your category or search query to explore other commercial formulas.
           </p>
-          <button
-            onClick={handleReset}
-            className="mt-4 btn-secondary text-xs px-5 py-2.5"
-          >
+          <button onClick={handleReset} className="mt-4 btn-secondary text-xs px-5 py-2.5">
             Clear All Filters
           </button>
         </div>
       ) : (
         <div className="space-y-10">
-          {/* Explicit columns keep existing cards in place as later batches append. */}
           <div
             ref={galleryRef}
             className="grid items-start"
@@ -384,22 +470,26 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
             {columns.map((column, columnIndex) => (
               <div
                 key={`masonry-column-${columnIndex}`}
-                ref={(element) => { columnRefs.current[columnIndex] = element; }}
+                ref={(element) => {
+                  columnRefs.current[columnIndex] = element;
+                }}
                 data-masonry-column={columnIndex}
                 className="flex min-w-0 flex-col gap-2 md:gap-7"
               >
-                {column.map((item) => item.type === 'video' ? (
-                  <VideoCard key={item.key} video={item.video} />
-                ) : (
-                  <AdSlot key={item.key} position="native-grid" />
-                ))}
+                {column.map((item) =>
+                  item.type === 'video' ? (
+                    <VideoCard key={item.key} video={item.video} />
+                  ) : (
+                    <AdSlot key={item.key} position="native-grid" />
+                  )
+                )}
               </div>
             ))}
           </div>
 
           {/* Dynamic Scroll Sentinel & Load More Trigger */}
           <div ref={sentinelRef} className="pt-6 flex flex-col items-center justify-center">
-            {hasMore ? (
+            {canShowMore ? (
               <button
                 onClick={loadMore}
                 disabled={isLoadingMore}
@@ -413,7 +503,7 @@ export default function PromptLibrary({ initialVideos = [], categories = [], ini
                 ) : (
                   <>
                     <ArrowDown className="w-4 h-4 text-[#66FCF1]" />
-                    <span>Load More Prompts ({filteredVideos.length - displayedVideos.length} remaining)</span>
+                    <span>Load More Prompts</span>
                   </>
                 )}
               </button>

@@ -64,11 +64,18 @@ export default function HomeTrendingTabs({ videos = [] }) {
       </div>
 
       {/* Masonry Gallery of strictly 8 Cards (Height dynamic per aspect ratio) */}
-      <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-7 [column-fill:_balance] [&>article]:mb-7">
-        {displayedVideos.map((video) => (
-          <VideoCard key={video._id} video={video} />
-        ))}
-      </div>
+      {displayedVideos.length === 0 ? (
+        <div className="py-16 text-center rounded-3xl bg-[#141d28]/40 border border-white/5 space-y-2">
+          <p className="text-sm font-medium text-[#C9D1D9]">No prompt blueprints found in this section yet.</p>
+          <p className="text-xs text-[#8B949E]">Check out the Prompt Library to browse all commercial blueprints.</p>
+        </div>
+      ) : (
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-7 [column-fill:_balance] [&>article]:mb-7">
+          {displayedVideos.map((video) => (
+            <VideoCard key={video._id} video={video} />
+          ))}
+        </div>
+      )}
 
       {/* View More in [Category] CTA Card below the section */}
       <div className="pt-4 flex flex-col sm:flex-row items-center justify-between p-6 sm:p-8 rounded-3xl bg-[#141d28] border border-white/10 glass-panel gap-6 max-[640px]:gap-4 max-[360px]:p-4">

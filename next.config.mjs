@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const BACKEND_URL = process.env.BACKEND_URL;
+
 const nextConfig = {
   output: 'standalone',
   serverExternalPackages: ['mongoose', 'bcryptjs'],
@@ -14,6 +16,18 @@ const nextConfig = {
       },
     ],
   },
+  ...(BACKEND_URL
+    ? {
+        async rewrites() {
+          return [
+            {
+              source: '/api/:path*',
+              destination: `${BACKEND_URL}/api/:path*`,
+            },
+          ];
+        },
+      }
+    : {}),
   webpack: (config) => {
     config.watchOptions = {
       ...config.watchOptions,

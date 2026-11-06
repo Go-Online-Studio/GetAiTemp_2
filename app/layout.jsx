@@ -37,6 +37,7 @@ export default function RootLayout({ children }) {
       lang="en"
       data-scroll-behavior="smooth"
       className="dark"
+      suppressHydrationWarning
     >
       <head>
         <meta name="google-adsense-account" content={adsenseClient} />
@@ -47,7 +48,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#0d1117] text-[#F0F6FC] antialiased selection:bg-[#45A29E]/30 selection:text-[#66FCF1]">
+      <body
+        suppressHydrationWarning
+        className="bg-[#0d1117] text-[#F0F6FC] antialiased selection:bg-[#45A29E]/30 selection:text-[#66FCF1]"
+      >
         {children}
         {adsenseClient && (
           <Script

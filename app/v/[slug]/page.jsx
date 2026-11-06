@@ -209,10 +209,10 @@ export default async function VideoPage({ params }) {
                   </p>
                 </div>
 
-                {video.technique && (
+                {(video.directorialTechnique || video.technique) && (
                   <p className="rounded-xl border border-[#45A29E]/30 bg-[#45A29E]/10 p-3 text-sm leading-relaxed text-[#C9D1D9]">
                     <span className="font-bold text-[#66FCF1]">Directorial technique: </span>
-                    {video.technique}
+                    {video.directorialTechnique || video.technique}
                   </p>
                 )}
 

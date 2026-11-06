@@ -1,42 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Copy, Check, Terminal, Share2, Lock, Unlock, Play, Sparkles, X, Volume2, ShieldCheck } from 'lucide-react';
+import { unlockPromptApi } from '@/lib/api';
 
 /**
  * ============================================================================
  * Rewarded Ad Gated PromptBox Component
- * ============================================================================
- * Requirements Fulfilled:
- * 1. Prompts are NOT fully visible until the user watches a sponsor advertisement.
- * 2. Before unlock: Blurred/redacted teaser with a high-conversion "Watch Ad to Unlock" callout.
- * 3. During unlock: Interactive Rewarded Ad Viewer with countdown, audio toggle, and sponsor messaging.
- * 4. After unlock: Crystal clear text reveal, localStorage persistence, and active Copy button.
- *
- * GOOGLE ADSENSE & GOOGLE AD MANAGER (GPT) REWARDED WEB ADS INSTRUCTIONS:
- * ----------------------------------------------------------------------------
- * When ready to activate Google Rewarded Web Ads in production:
- *
- * Option A: Google Ad Manager (GPT) Rewarded Web Ad
- * 1. In Google Ad Manager, generate a Rewarded Web Ad unit tag.
- * 2. Add GPT to layout.jsx:
- *    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
- * 3. Inside triggerGoogleRewardedAd() below, uncomment the GPT event listeners:
- *    googletag.cmd.push(() => {
- *      const rewardedSlot = googletag.defineOutOfPageSlot(
- *        '/YOUR_NETWORK_ID/REWARDED_AD_UNIT',
- *        googletag.enums.OutOfPageFormat.REWARDED
- *      );
- *      rewardedSlot.addService(googletag.pubads());
- *      googletag.pubads().addEventListener('rewardedSlotGranted', () => {
- *        grantUnlockReward();
- *      });
- *      googletag.display(rewardedSlot);
- *      rewardedSlot.makeRewardedVisible();
- *    });
- *
- * Option B: Google AdSense Rewarded Ad (Beta / Direct API)
- * Configure via `adsbygoogle.push({ params: { ... } })` as documented below.
  * ============================================================================
  */
 export default function PromptBox({
@@ -47,6 +17,7 @@ export default function PromptBox({
   slug = '',
 }) {
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [revealedPrompt, setRevealedPrompt] = useState(promptText);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const [adCountdown, setAdCountdown] = useState(5);
   const [adPlaying, setAdPlaying] = useState(false);
@@ -61,12 +32,48 @@ export default function PromptBox({
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.prompt) {
+          setRevealedPrompt(parsed.prompt);
+        }
         setIsUnlocked(true);
       }
     } catch (e) {
       // LocalStorage access restricted or unavailable in private browsing
     }
   }, [storageKey]);
+
+  const grantUnlockReward = useCallback(async () => {
+    setIsAdModalOpen(false);
+    setAdPlaying(false);
+
+    try {
+      let activePrompt = promptText || revealedPrompt;
+      // Fetch prompt from secure backend endpoint if not already loaded
+      if (!activePrompt && (videoId || slug)) {
+        const res = await unlockPromptApi(videoId || slug);
+        if (res && res.prompt) {
+          activePrompt = res.prompt;
+          setRevealedPrompt(res.prompt);
+        }
+      } else if (videoId) {
+        // Still notify backend of unlock to increment stats
+        unlockPromptApi(videoId).catch(() => {});
+      }
+
+      setIsUnlocked(true);
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          unlockedAt: Date.now(),
+          title,
+          prompt: activePrompt,
+        })
+      );
+    } catch (e) {
+      setIsUnlocked(true);
+    }
+  }, [promptText, revealedPrompt, videoId, slug, storageKey, title]);
 
   // Handle countdown during the simulated Rewarded Ad view
   useEffect(() => {
@@ -76,52 +83,30 @@ export default function PromptBox({
           setAdCountdown((prev) => prev - 1);
         }, 1000);
       } else {
-        // Countdown completed -> Grant reward!
         grantUnlockReward();
       }
     }
     return () => {
       if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
     };
-  }, [isAdModalOpen, adPlaying, adCountdown]);
+  }, [isAdModalOpen, adPlaying, adCountdown, grantUnlockReward]);
 
   const handleStartAd = () => {
     setAdCountdown(5);
     setAdPlaying(true);
     setIsAdModalOpen(true);
-
-    /*
-     * ------------------------------------------------------------------------
-     * [AD INTEGRATION HOOK]
-     * If live Google Rewarded Ad / GPT is loaded on window, trigger it here:
-     * ------------------------------------------------------------------------
-     * if (typeof window !== 'undefined' && window.googletag && window.__rewardedSlot) {
-     *   window.__rewardedSlot.makeRewardedVisible();
-     * }
-     */
   };
 
-  const grantUnlockReward = () => {
-    setIsUnlocked(true);
-    setIsAdModalOpen(false);
-    setAdPlaying(false);
-
-    try {
-      localStorage.setItem(storageKey, JSON.stringify({
-        unlockedAt: Date.now(),
-        title,
-      }));
-    } catch (e) {}
-  };
+  const currentDisplayPrompt = revealedPrompt || promptText;
 
   const handleCopy = async () => {
-    if (!isUnlocked || !promptText) return;
+    if (!isUnlocked || !currentDisplayPrompt) return;
     try {
       if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(promptText);
+        await navigator.clipboard.writeText(currentDisplayPrompt);
       } else {
         const textarea = document.createElement('textarea');
-        textarea.value = promptText;
+        textarea.value = currentDisplayPrompt;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
@@ -196,7 +181,7 @@ export default function PromptBox({
             !isUnlocked ? 'filter blur-[7px] opacity-40 select-none pointer-events-none' : ''
           }`}
         >
-          {promptText}
+          {currentDisplayPrompt}
         </div>
 
         {/* LOCKED AD REWARD GATE OVERLAY (Displayed until user watches advertisement) */}
