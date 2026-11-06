@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getVideos, getCategories } from '@/lib/data-source';
 import Header from '@/components/Header';
@@ -75,12 +76,14 @@ export default async function CategoryPage({ params }) {
             <AdSlot position="leaderboard" />
           </section>
 
-          <PromptLibrary
-            initialVideos={videos || []}
-            initialTotal={total || 0}
-            categories={allCategories || []}
-            initialCategory={slug === 'all' ? 'all' : slug}
-          />
+          <Suspense fallback={<div className="py-20 text-center text-white/50 font-mono text-sm">Loading category prompts...</div>}>
+            <PromptLibrary
+              initialVideos={videos || []}
+              initialTotal={total || 0}
+              categories={allCategories || []}
+              initialCategory={slug === 'all' ? 'all' : slug}
+            />
+          </Suspense>
 
           {/* IN-BETWEEN ADVERTISEMENT: Bottom Banner */}
           <section className="w-full pt-8">

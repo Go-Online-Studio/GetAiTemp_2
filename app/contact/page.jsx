@@ -11,9 +11,8 @@ export const metadata = {
   description: 'Get in touch with our team of AI video prompt engineers for inquiries, prompt submissions, or brand sponsorships.',
 };
 
-export default async function ContactPage(props) {
-  const searchParams = await props?.searchParams;
-  const initialSubject = searchParams?.subject || 'General Inquiry';
+export default function ContactPage() {
+  const initialSubject = 'General Inquiry';
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-white flex flex-col selection:bg-[#45A29E]/30 selection:text-[#66FCF1]">

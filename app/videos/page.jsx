@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { getVideos, getCategories } from '@/lib/data-source';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -12,14 +13,10 @@ export const metadata = {
 
 export const revalidate = 60;
 
-export default async function VideosPage(props) {
-  const searchParams = await props?.searchParams;
-  const search = searchParams?.search || '';
-  const category = searchParams?.category || 'all';
-
+export default async function VideosPage() {
   const [categories, { videos, total }] = await Promise.all([
     getCategories(),
-    getVideos({ page: 1, limit: 8, category, search, includePrompt: false, status: 'published' }),
+    getVideos({ page: 1, limit: 8, category: 'all', search: '', includePrompt: false, status: 'published' }),
   ]);
 
   return (
@@ -54,13 +51,13 @@ export default async function VideosPage(props) {
           </section>
 
           {/* Interactive Library with Filters & Native Grid Ad every 8 items */}
-          <PromptLibrary
-            initialVideos={videos || []}
-            initialTotal={total || 0}
-            categories={categories || []}
-            initialSearch={search}
-            initialCategory={category}
-          />
+          <Suspense fallback={<div className="py-20 text-center text-white/50 font-mono text-sm">Loading library...</div>}>
+            <PromptLibrary
+              initialVideos={videos || []}
+              initialTotal={total || 0}
+              categories={categories || []}
+            />
+          </Suspense>
 
           {/* IN-BETWEEN ADVERTISEMENT: Bottom Banner before Footer */}
           <section className="w-full pt-8">

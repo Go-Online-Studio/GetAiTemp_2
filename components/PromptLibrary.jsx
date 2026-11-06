@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import VideoCard from './VideoCard';
 import AdSlot from './AdSlot';
 import { Search, RotateCcw, ArrowDown } from 'lucide-react';
@@ -83,9 +84,13 @@ export default function PromptLibrary({
   initialCategory = 'all',
   initialTotal = 0,
 }) {
-  const [search, setSearch] = useState(initialSearch);
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams?.get('search') || initialSearch;
+  const urlCategory = searchParams?.get('category') || initialCategory;
+
+  const [search, setSearch] = useState(urlSearch);
   const [aspectRatioFilter, setAspectRatioFilter] = useState('all');
-  const [styleFilter, setStyleFilter] = useState(initialCategory);
+  const [styleFilter, setStyleFilter] = useState(urlCategory);
 
   // Loaded feed state
   const [videos, setVideos] = useState(initialVideos);
@@ -94,12 +99,11 @@ export default function PromptLibrary({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isFirstMountRef = useRef(true);
 
-  // Synchronize styleFilter if initialCategory prop changes
+  // Synchronize if query params in URL change
   useEffect(() => {
-    if (initialCategory) {
-      setStyleFilter(initialCategory);
-    }
-  }, [initialCategory]);
+    if (urlCategory) setStyleFilter(urlCategory);
+    if (urlSearch !== undefined) setSearch(urlSearch);
+  }, [urlCategory, urlSearch]);
 
   // Handle client-side filtering if local items are loaded or fallback is active
   const filteredVideos = useMemo(() => {
