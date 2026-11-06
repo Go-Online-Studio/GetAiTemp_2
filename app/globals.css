@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-space-grotesk: 'Space Grotesk', sans-serif;
+  --font-fira-code: 'Fira Code', 'JetBrains Mono', monospace;
   --main-nav-height: 64px;
   --bg-color: #0d1117;
   --surface: #161f2c;

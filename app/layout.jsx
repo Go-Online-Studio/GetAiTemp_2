@@ -1,27 +1,5 @@
-import { Space_Grotesk, Inter, Fira_Code } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-space-grotesk',
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const firaCode = Fira_Code({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  variable: '--font-fira-code',
-  display: 'swap',
-});
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://getyouraiprompt.com'),
@@ -58,10 +36,16 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`dark ${spaceGrotesk.variable} ${inter.variable} ${firaCode.variable}`}
+      className="dark"
     >
       <head>
         <meta name="google-adsense-account" content={adsenseClient} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="bg-[#0d1117] text-[#F0F6FC] antialiased selection:bg-[#45A29E]/30 selection:text-[#66FCF1]">
         {children}
